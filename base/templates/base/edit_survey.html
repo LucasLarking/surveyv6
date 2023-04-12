@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>Edit Survey</h1>
+
+    <form id="login_form" action="" method="POST">
+      {%csrf_token%}
+      <input type="text" name="survey" id="survey" />
+      <input type="text" name="description" id="description" />
+    
+      <input type="submit" value="Submit" />
+    </form>
+
+    <script>
+      const survey_id = window.location.pathname.split("/")[3];
+      const login_form = document.querySelector("#login_form");
+      login_form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        let formData = new FormData(login_form);
+        let formDataObject = Object.fromEntries(formData.entries());
+        let formDataJsonString = JSON.stringify(formDataObject);
+
+        fetch(`../surveys/${survey_id}/`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: "JWT " + localStorage.getItem("access"),
+          },
+          body: formDataJsonString,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+          })
+
+          .catch((error) => {
+            console.log(error);
+          });
+      });
+    </script>
+  </body>
+</html>

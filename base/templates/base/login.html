@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <form id="login_form" action="" method="POST">
+      {%csrf_token%}
+      <input type="text" name="username" id="username" />
+      <input type="password" name="password" id="password" />
+      <input type="submit" value="Submit">
+    </form>
+
+    <script>
+      const login_form = document.querySelector('#login_form')
+      login_form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        let formData = new FormData(login_form);
+        let formDataObject = Object.fromEntries(formData.entries());
+        let formDataJsonString = JSON.stringify(formDataObject);
+        fetch("../auth/jwt/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+      
+          },
+          body: formDataJsonString,
+        })
+        .then((response) => response.json())
+          .then((data) => {
+              console.log(data)
+              localStorage.setItem("access", data['access']);
+              localStorage.setItem("refresh", data['refresh'])
+          })
+
+          .catch((error) => {
+            console.log(error);
+
+          });
+
+      });
+    </script>
+  </body>
+</html>
