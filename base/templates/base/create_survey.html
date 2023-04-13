@@ -1,13 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Create Survey</h1>
+    <form id="create_survey_form" action="" method="POST">
+      {%csrf_token%}
+      <label for="survey">Survey</label>
+      <input type="text" name="survey" id="survey" />
+      <label for="description">Description</label>
+      <textarea
+        name="description"
+        id="description"
+        cols="30"
+        rows="10"
+      ></textarea>
 
-</body>
+      <input type="submit" value="Submit" />
+    </form>
+
+    <script>
+      const create_survey_form = document.querySelector("#create_survey_form");
+      create_survey_form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        let formData = new FormData(create_survey_form);
+        let formDataObject = Object.fromEntries(formData.entries());
+        let formDataJsonString = JSON.stringify(formDataObject);
+
+        fetch(`../api/surveys/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: "JWT " + localStorage.getItem("access"),
+          },
+          body: formDataJsonString,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            if ('id' in data) {
+                window.location.href = `http://127.0.0.1:8000/api/edit_survey/${data["id"]}`;
+            }
+            
+          })
+
+          .catch((error) => {
+            console.log(error);
+          });
+      });
+    </script>
+    <style>
+      input, textarea {
+        display: block;
+      }
+      .error {
+        color: red;
+        font-size: 11px;
+        display: block;
+      }
+    </style>
+  </body>
 </html>

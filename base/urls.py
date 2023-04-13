@@ -3,6 +3,7 @@ from django.urls import path, include
 from rest_framework_nested import routers
 from .views import (
     SurveyViewSet,
+    QuestionViewSet,
     LoginView,
     CreateSurveyView,
     EditSurveyView)
@@ -11,7 +12,7 @@ from .views import (
 router = routers.DefaultRouter()
 router.register('surveys', SurveyViewSet)
 survey_router = routers.NestedDefaultRouter(router, 'surveys', lookup='survey')
-
+survey_router.register('questions', QuestionViewSet, basename='survey-question')
 
 urlpatterns = router.urls + survey_router.urls
 

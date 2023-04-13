@@ -9,23 +9,34 @@
   <body>
     <h1>Edit Survey</h1>
 
-    <form id="login_form" action="" method="POST">
+    <form id="edit_survey_form" action="" method="POST">
       {%csrf_token%}
+      <label for="survey">Survey</label>
       <input type="text" name="survey" id="survey" />
-      <input type="text" name="description" id="description" />
-    
+
+      <label for="description">Description</label>
+      <textarea name="description" id="description" cols="30" rows="10"></textarea>
       <input type="submit" value="Submit" />
+    </form>
+
+    <br /><br /><br /><br />
+    <hr />
+    <form id="delete_form" action="" method="DELETE">
+      {%csrf_token%}
+
+      <input type="submit" value="DELETE" />
     </form>
 
     <script>
       const survey_id = window.location.pathname.split("/")[3];
-      const login_form = document.querySelector("#login_form");
-      login_form.addEventListener("submit", function (e) {
+      const edit_survey_form = document.querySelector("#edit_survey_form");
+      const delete_form = document.querySelector("#delete_form");
+      edit_survey_form.addEventListener("submit", function (e) {
         e.preventDefault();
-        let formData = new FormData(login_form);
+        let formData = new FormData(edit_survey_form);
         let formDataObject = Object.fromEntries(formData.entries());
         let formDataJsonString = JSON.stringify(formDataObject);
-
+        console.log("sedingn...", formDataObject, formDataJsonString);
         fetch(`../surveys/${survey_id}/`, {
           method: "PATCH",
           headers: {
@@ -38,12 +49,67 @@
           .then((response) => response.json())
           .then((data) => {
             console.log(data);
+            new_csrf_token = data.csrf_token;
+            document.cookie = `csrftoken=${new_csrf_token}; path=/`;
           })
 
           .catch((error) => {
             console.log(error);
           });
       });
+      delete_form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        let formData = new FormData(delete_form);
+        let formDataObject = Object.fromEntries(formData.entries());
+        console.log("sedingn...", formDataObject);
+        let formDataJsonString = JSON.stringify(formDataObject);
+
+        fetch(`../surveys/${survey_id}/`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: "JWT " + localStorage.getItem("access"),
+          },
+          body: { csrfmiddlewaretoken: document.cookie },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log('it was deleted')
+              window.location.href = `http://127.0.0.1:8000/api/`;
+              // Success! The response was in the 200-299 range
+              return response.json();
+            } else {
+              // There was an error. Handle it appropriately
+              throw new Error("Network response was not ok");
+            }
+          })
+          .then((data) => {
+            console.log(data);
+            // new_csrf_token = data.csrf_token
+            // document.cookie = `csrftoken=${new_csrf_token}; path=/`;
+          })
+
+          .catch((error) => {
+            console.log(error);
+          });
+      });
+    
+    
+
+      // Fetch Survey Questions
+
+    
     </script>
+    <style>
+      input, textarea {
+        display: block;
+      }
+      .error {
+        color: red;
+        font-size: 11px;
+        display: block;
+      }
+    </style>
   </body>
 </html>
