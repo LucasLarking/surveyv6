@@ -2,9 +2,33 @@ from rest_framework import serializers
 from .models import Survey, Question, Option, Customer, User
 from django.http import HttpResponseRedirect
 from rest_framework.exceptions import PermissionDenied
+from rest_framework import permissions
+from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
+from djoser.serializers import UserSerializer as BaseUserSerializer
 from .permissions import (
     IsOwnerOfSurveyOrReadOnly,
     IsOwnerOrReadOnly)
+
+
+class UserCreateSerializer(BaseUserCreateSerializer):
+
+    class Meta(BaseUserCreateSerializer.Meta):
+        fields = ['id', 'username', 'password',
+                  'email', 'first_name', 'last_name']
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Customer
+        fields = ['id', 'user_id', 'membership']
+
+
+class UserSerializer(BaseUserSerializer):
+
+    class Meta(BaseUserSerializer.Meta):
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 
 class SurveySerializer(serializers.ModelSerializer):
@@ -16,10 +40,16 @@ class SurveySerializer(serializers.ModelSerializer):
         read_only_fields = ['customer_id', 'id']
         partial = False
 
-    def validate_description(self, description):
-        if description == 'desc':
-            raise serializers.ValidationError('Description cannot be desc')
-        return description
+
+    def validate(self, attrs):
+        request = self.context['request']
+        print('Validationg Question')
+        if request.method in ['PATCH', 'DELETE']:
+            if Survey.objects.get(id=self.context['survey']).customer_id.user != request.user:
+                raise serializers.ValidationError('You dont own this survey.')
+        return attrs
+
+
 
     def save(self, **kwargs):
         print('saving')
@@ -34,33 +64,6 @@ class SurveySerializer(serializers.ModelSerializer):
             )
             return self.instance
         elif request.method == 'PATCH':
-            print('context', self.context)
-            print(request.user)
-            request = self.context['request']
-            if not request.user.has_perm(IsOwnerOrReadOnly):
-                raise PermissionDenied('Yoi are not the owner')
-            self.instance = Survey.objects.get(id=self.context['survey'])
-            self.instance.survey = self.validated_data['survey']
-            self.instance.description = self.validated_data['description']
-            self.instance.save()
-
-
-class EditSurveySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Survey
-        fields = ['survey', 'description']
-
-        partial = False
-
-    def save(self, **kwargs):
-
-        request = self.context['request']
-        if not request.user.has_perm('base.IsOwnerOrReadOnly'):
-            raise PermissionDenied(
-                'ato perform this action.')
-
-        if request.method == 'PATCH':
             print(self.context)
             self.instance = Survey.objects.get(id=self.context['survey'])
             self.instance.survey = self.validated_data['survey']
@@ -68,6 +71,8 @@ class EditSurveySerializer(serializers.ModelSerializer):
             self.instance.save()
 
             return self.instance
+
+
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -79,18 +84,32 @@ class QuestionSerializer(serializers.ModelSerializer):
         read_only_fields = ['survey', 'id']
         partial = False
 
-    def save(self, **kwargs):
 
+    def validate(self, attrs):
         request = self.context['request']
-        if not request.user.has_perm(IsOwnerOfSurveyOrReadOnly):
-            raise PermissionDenied(
-                'You do not have permission to perform this action.')
+        print('Validationg Question')
+        if request.method not in permissions.SAFE_METHODS:
+            if Survey.objects.get(id=self.context['survey']).customer_id.user != request.user:
+                raise serializers.ValidationError('You dont own this survey')
+        return attrs
+
+    def save(self, **kwargs):
+        print(',akitng')
+        request = self.context['request']
 
         if request.method == 'POST':
             self.instance = Question.objects.create(
                 survey=Survey.objects.get(id=self.context['survey']),
                 question=self.validated_data['question'],
             )
+            return self.instance
+    
+        if request.method == 'PATCH':
+            print(self.context)
+            self.instance = Question.objects.get(id=self.context['question'])
+            self.instance.question = self.validated_data['question']
+            self.instance.save()
+
             return self.instance
 
     def update(self, instance, validated_data):
@@ -100,24 +119,37 @@ class QuestionSerializer(serializers.ModelSerializer):
         return instance
 
 
-class EditQuestionSerializer(serializers.ModelSerializer):
+class OptionSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
 
     class Meta:
-        model = Question
-        fields = ['question']
-
+        model = Option
+        fields = ['id', 'option', 'question']
+        read_only_fields = ['question', 'id']
         partial = False
+
+    def validate(self, attrs):
+        request = self.context['request']
+        print('Validationg option')
+        if request.method not in permissions.SAFE_METHODS:
+            if Survey.objects.get(id=self.context['survey']).customer_id.user != request.user:
+                raise serializers.ValidationError('You dont own this survey.')
+        return attrs
+
 
     def save(self, **kwargs):
 
         request = self.context['request']
-        if not request.user.has_perm(IsOwnerOfSurveyOrReadOnly):
-            raise PermissionDenied(
-                'You do not have permission to perform this action.')
 
-        if request.method == 'PATCH':
-            self.instance = Question.objects.get(survey=self.context['survey'])
-            self.instance.question = self.validated_data['question']
-            self.instance.save()
-
+        if request.method == 'POST':
+            self.instance = Option.objects.create(
+                question=Question.objects.get(id=self.context['question']),
+                option=self.validated_data['option'],
+            )
             return self.instance
+
+    def update(self, instance, validated_data):
+        instance.option = validated_data.get('option', instance.option)
+
+        instance.save()
+        return instance

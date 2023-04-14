@@ -15,6 +15,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 
 class IsOwnerOfSurveyOrReadOnly(permissions.BasePermission):
+
     def has_object_permission(self, request, view, obj):
         print('asdsdasd')
         if request.method in permissions.SAFE_METHODS:
@@ -24,3 +25,12 @@ class IsOwnerOfSurveyOrReadOnly(permissions.BasePermission):
         print('USERS CUSTOMER ID USER:', obj.survey.customer_id.user, request.user)
         print('IS IT SAME? ', obj.survey.customer_id.user == request.user)
         return obj.survey.customer_id.user == request.user
+
+
+class OptionOwnerOfSurveyOrReadOnly(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+
+        if request.method in permissions.SAFE_METHODS:
+            return True
+       
+        return obj.question.survey.customer_id.user == request.user

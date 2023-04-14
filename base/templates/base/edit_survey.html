@@ -15,7 +15,12 @@
       <input type="text" name="survey" id="survey" />
 
       <label for="description">Description</label>
-      <textarea name="description" id="description" cols="30" rows="10"></textarea>
+      <textarea
+        name="description"
+        id="description"
+        cols="30"
+        rows="10"
+      ></textarea>
       <input type="submit" value="Submit" />
     </form>
 
@@ -27,10 +32,24 @@
       <input type="submit" value="DELETE" />
     </form>
 
+    <form action="" method="POST" id="add_question_form">
+      <label for="question">Question</label>
+      <input type="text" name="question" id="question" />
+      <!-- <label for="option">option</label> -->
+       <!-- <input type="text" id="option" /> -->
+      <input type="submit" value="Add Question" />
+    </form>
+
     <script>
       const survey_id = window.location.pathname.split("/")[3];
       const edit_survey_form = document.querySelector("#edit_survey_form");
       const delete_form = document.querySelector("#delete_form");
+      const survey_title = document.querySelector("#survey");
+      const survey_description = document.querySelector("#description");
+      const add_question_form = document.querySelector("#add_question_form");
+      const question = document.querySelector("#question");
+      const option = document.querySelector("#option");
+
       edit_survey_form.addEventListener("submit", function (e) {
         e.preventDefault();
         let formData = new FormData(edit_survey_form);
@@ -75,7 +94,7 @@
         })
           .then((response) => {
             if (response.ok) {
-              console.log('it was deleted')
+              console.log("it was deleted");
               window.location.href = `http://127.0.0.1:8000/api/`;
               // Success! The response was in the 200-299 range
               return response.json();
@@ -94,15 +113,77 @@
             console.log(error);
           });
       });
-    
-    
 
       // Fetch Survey Questions
 
-    
+      fetch(`../surveys/${survey_id}/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: "JWT " + localStorage.getItem("access"),
+          "X-CSRFToken": document.cookie,
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+          survey_title.value = data.survey;
+          survey_description.value = data.description;
+        })
+
+        .catch((error) => {
+          console.log(error);
+        });
+      fetch(`../surveys/${survey_id}/questions`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: "JWT " + localStorage.getItem("access"),
+          "X-CSRFToken": document.cookie,
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+
+        })
+
+        .catch((error) => {
+          console.log(error);
+        });
+
+      add_question_form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        let formData = new FormData(add_question_form);
+        let formDataObject = Object.fromEntries(formData.entries());
+        console.log("sedingn...", formDataObject);
+        let formDataJsonString = JSON.stringify(formDataObject);
+
+        fetch(`../surveys/${survey_id}/questions/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: "JWT " + localStorage.getItem("access"),
+          },
+          body: formDataJsonString,
+        })
+        .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            
+          })
+
+          .catch((error) => {
+            console.log(error);
+          });
+      });
     </script>
     <style>
-      input, textarea {
+      input,
+      textarea {
         display: block;
       }
       .error {
